@@ -1,0 +1,125 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Product App</title>
+    <link href="css/bootstrap.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <h1>Products</h1>
+        <hr />
+        <div class="main-container"></div>
+    </div>
+    <script type="text/html" id="product-list-template">
+        <a href="#/new" class="btn btn-primary">New</a>
+        <hr />
+        <table class="table striped">
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <% _.each(products, function(product) { %>
+                <%= console.log(product)%>
+                <tr>
+                    <td><%=product.get('Name')%></td>
+                    <td><%=product.get('Category') %></td>
+                    <td><%=product.get('Price') %></td>
+                    <td><a class="btn" href="#/edit/<%= product.id %>">Edit</a></td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.0.3.min.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/underscore.js"></script>
+    <script src="js/backbone.js"></script>
+    <script>
+    $.fn.serializeObject = function () {
+        var o = {};
+        var a = this.serializeArray();
+        $.each(a, function () {
+            if (o[this.name] !== undefined) {
+                if (!o[this.name].push) {
+                    o[this.name] = [o[this.name]];
+                }
+                o[this.name].push(this.value || '');
+            } else {
+                o[this.name] = this.value || '';
+            }
+        });
+        return o;
+    };
+    
+    var uri = 'api/Products';
+    var Product = Backbone.Model.extend({
+        urlRoot: uri
+    });
+
+    var Products = Backbone.Collection.extend({
+        model : Product,
+        url: uri
+    });
+    var ProductListView = Backbone.View.extend({
+        el: '.main-container',
+        render: function () {
+            var me = this;
+            var products = new Products();
+            products.fetch({
+                success: function (resp) {
+                    console.log(resp);
+                    var source = $('#product-list-template').html();
+                    var template = _.template(source);
+                    template = template({products: resp.models});
+                    me.$el.html(template);
+                }
+            });
+        }
+
+    });
+    
+    var product = new Product({Name:'Rodrigo', Category: 'New Product', Price:'1000'});
+    product.save({
+        success: function (resp) {
+            console.log(resp);
+        }
+    });
+
+
+    var productlist = new ProductListView();
+    productlist.render();
+
+    $(document).ready(function () {
+      // Send an AJAX request
+      $.getJSON(uri)
+          .done(function (data) {
+            // On success, 'data' contains a list of products.
+            $.each(data, function (key, item) {
+              // Add a list item for the product.
+              $('<li>', { text: formatItem(item) }).appendTo($('#products'));
+            });
+          });
+    });
+
+    function formatItem(item) {
+      return item.Name + ': $' + item.Price;
+    }
+
+    function find() {
+      var id = $('#prodId').val();
+      $.getJSON(uri + '/' + id)
+          .done(function (data) {
+            $('#product').text(formatItem(data));
+          })
+          .fail(function (jqXHR, textStatus, err) {
+            $('#product').text('Error: ' + err);
+          });
+    }
+    </script>
+</body>
+</html>
